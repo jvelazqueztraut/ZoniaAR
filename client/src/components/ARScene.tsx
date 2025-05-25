@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { artists, Artist } from '@/data/artists';
 
 interface ARSceneProps {
   isActive: boolean;
@@ -12,6 +13,9 @@ export default function ARScene({ isActive }: ARSceneProps) {
   const cameraRef = useRef<any>(null);
   const cubeRef = useRef<any>(null);
   const sessionRef = useRef<any>(null);
+  const artistCardsRef = useRef<any[]>([]);
+  const hitTestSourceRef = useRef<any>(null);
+  const hitTestResultsRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!mountRef.current || !isActive) return;
@@ -59,20 +63,10 @@ export default function ARScene({ isActive }: ARSceneProps) {
     light.position.set(0.5, 1, 0.25);
     scene.add(light);
 
-    // Create a simple cube as 3D model
-    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x1DB954,
-      transparent: true,
-      opacity: 0.8
-    });
-    
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0, 0, -0.3);
-    scene.add(cube);
-    cubeRef.current = cube;
+    // Create artist cards positioned in a circle around the user
+    createArtistCards(scene);
 
-    // Add ground plane reference
+    // Add ground plane reference for AR anchoring
     const planeGeometry = new THREE.PlaneGeometry(2, 2);
     const planeMaterial = new THREE.MeshBasicMaterial({
       color: 0xFF6B35,
@@ -82,7 +76,7 @@ export default function ARScene({ isActive }: ARSceneProps) {
     });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.rotateX(-Math.PI / 2);
-    plane.position.y = -0.5;
+    plane.position.y = 0;
     scene.add(plane);
 
     // Animation loop
@@ -91,10 +85,15 @@ export default function ARScene({ isActive }: ARSceneProps) {
     }
 
     function render() {
-      if (cubeRef.current) {
-        cubeRef.current.rotation.x += 0.01;
-        cubeRef.current.rotation.y += 0.01;
-      }
+      // Animate artist cards with subtle floating motion
+      artistCardsRef.current.forEach((card, index) => {
+        if (card) {
+          const time = Date.now() * 0.001;
+          card.position.y = 0.5 + Math.sin(time + index * 0.5) * 0.1;
+          card.rotation.y += 0.005;
+        }
+      });
+
       renderer.render(scene, camera);
     }
 
@@ -112,6 +111,78 @@ export default function ARScene({ isActive }: ARSceneProps) {
 
     // Try to initialize WebXR AR session
     initWebXR();
+  };
+
+  const createArtistCards = (scene: any) => {
+    const textureLoader = new THREE.TextureLoader();
+    const radius = 1.5; // Distance from center in meters
+    artistCardsRef.current = [];
+
+    artists.forEach((artist, index) => {
+      // Calculate position in circle around user
+      const angle = (index / artists.length) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      // Create card geometry (portrait orientation)
+      const cardGeometry = new THREE.PlaneGeometry(0.4, 0.6);
+      
+      // Load artist image as texture
+      textureLoader.load(
+        artist.image,
+        (texture) => {
+          // Create material with artist image
+          const cardMaterial = new THREE.MeshLambertMaterial({
+            map: texture,
+            transparent: true,
+            opacity: 0.9
+          });
+
+          const artistCard = new THREE.Mesh(cardGeometry, cardMaterial);
+          
+          // Position card in world space
+          artistCard.position.set(x, 0.5, z);
+          
+          // Face the center (user)
+          artistCard.lookAt(0, 0.5, 0);
+          
+          // Add glow effect border
+          const borderGeometry = new THREE.PlaneGeometry(0.45, 0.65);
+          const borderMaterial = new THREE.MeshBasicMaterial({
+            color: artist.color,
+            transparent: true,
+            opacity: 0.3
+          });
+          const border = new THREE.Mesh(borderGeometry, borderMaterial);
+          border.position.z = -0.001; // Slightly behind the card
+          artistCard.add(border);
+
+          // Store reference to artist data
+          (artistCard as any).userData = artist;
+          
+          scene.add(artistCard);
+          artistCardsRef.current.push(artistCard);
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading artist image:', error);
+          // Create fallback card with colored material
+          const fallbackMaterial = new THREE.MeshLambertMaterial({
+            color: artist.color,
+            transparent: true,
+            opacity: 0.8
+          });
+          
+          const artistCard = new THREE.Mesh(cardGeometry, fallbackMaterial);
+          artistCard.position.set(x, 0.5, z);
+          artistCard.lookAt(0, 0.5, 0);
+          (artistCard as any).userData = artist;
+          
+          scene.add(artistCard);
+          artistCardsRef.current.push(artistCard);
+        }
+      );
+    });
   };
 
   const initWebXR = async () => {
@@ -138,14 +209,18 @@ export default function ARScene({ isActive }: ARSceneProps) {
 
     try {
       const session = await (navigator as any).xr.requestSession('immersive-ar', {
-        requiredFeatures: ['local-floor'],
-        optionalFeatures: ['dom-overlay', 'hit-test']
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['local-floor', 'dom-overlay']
       });
       
       sessionRef.current = session;
       rendererRef.current.xr.setSession(session);
       
-      console.log('AR session started successfully');
+      // Set up hit testing for surface anchoring
+      const referenceSpace = await session.requestReferenceSpace('viewer');
+      hitTestSourceRef.current = await session.requestHitTestSource({ space: referenceSpace });
+      
+      console.log('AR session started successfully with hit testing');
     } catch (error) {
       console.log('Failed to start AR session:', error);
     }
