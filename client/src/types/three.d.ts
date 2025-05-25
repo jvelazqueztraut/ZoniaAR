@@ -75,6 +75,25 @@ declare module 'three' {
     };
   }
   
+  export class AudioListener {
+    constructor();
+  }
+  
+  export class PositionalAudio {
+    constructor(listener: AudioListener);
+    setBuffer(buffer: any): void;
+    setVolume(volume: number): void;
+    setRefDistance(distance: number): void;
+    play(): void;
+    pause(): void;
+    stop(): void;
+    isPlaying: boolean;
+  }
+  
+  export class AudioLoader {
+    load(url: string, onLoad: (buffer: any) => void, onProgress?: (progress: any) => void, onError?: (error: any) => void): void;
+  }
+  
   export const SRGBColorSpace: any;
   export const DoubleSide: any;
 }

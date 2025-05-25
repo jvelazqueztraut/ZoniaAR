@@ -15,7 +15,7 @@ export const artists: Artist[] = [
     name: "Nova Beats",
     genre: "Electronic",
     image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
-    audio: "", // To be provided by user with real Zonia artist audio
+    audio: "", // To be provided with real Zonia artist audio URL
     bio: "Nova Beats creates ethereal electronic soundscapes that transport listeners to otherworldly dimensions. Known for innovative use of synthesizers and ambient textures.",
     color: "#1DB954"
   },

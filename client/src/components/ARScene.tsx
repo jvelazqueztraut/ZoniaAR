@@ -16,6 +16,10 @@ export default function ARScene({ isActive }: ARSceneProps) {
   const artistCardsRef = useRef<any[]>([]);
   const hitTestSourceRef = useRef<any>(null);
   const hitTestResultsRef = useRef<any[]>([]);
+  const audioListenerRef = useRef<any>(null);
+  const audioSourcesRef = useRef<any[]>([]);
+  const userInteractedRef = useRef(false);
+  const proximityRadiusRef = useRef(1.2); // 1.2 meters proximity threshold
 
   useEffect(() => {
     if (!mountRef.current || !isActive) return;
@@ -42,6 +46,11 @@ export default function ARScene({ isActive }: ARSceneProps) {
       20
     );
     cameraRef.current = camera;
+
+    // Set up audio listener and attach to camera
+    const audioListener = new THREE.AudioListener();
+    audioListenerRef.current = audioListener;
+    camera.add(audioListener);
 
     // Create renderer
     const renderer = new THREE.WebGLRenderer({ 
