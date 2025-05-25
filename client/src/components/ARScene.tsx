@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 interface ARSceneProps {
   isActive: boolean;
 }
-
-// Declare Three.js types to avoid compilation issues
-declare const THREE: any;
 
 export default function ARScene({ isActive }: ARSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -18,17 +16,14 @@ export default function ARScene({ isActive }: ARSceneProps) {
   useEffect(() => {
     if (!mountRef.current || !isActive) return;
 
-    // Dynamically import Three.js
-    import('three').then(THREE => {
-      initThreeScene(THREE);
-    });
+    initThreeScene();
 
     return () => {
       cleanup();
     };
   }, [isActive]);
 
-  const initThreeScene = (THREE: any) => {
+  const initThreeScene = () => {
     if (!mountRef.current) return;
 
     // Create scene
