@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Camera, VolumeX, Maximize, Box, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import ARScene from "@/components/ARScene";
 
 export default function ARExperience() {
@@ -134,21 +134,6 @@ export default function ARExperience() {
             
             {/* AR Scene Overlay */}
             <ARScene isActive={cameraActive} />
-
-            {/* AR UI Controls */}
-            <div className="ar-controls">
-              <div className="ar-controls-container">
-                <button className="ar-control-button ar-control-secondary">
-                  <VolumeX size={20} />
-                </button>
-                <button className="ar-control-button ar-control-primary">
-                  <Camera size={20} />
-                </button>
-                <button className="ar-control-button ar-control-secondary">
-                  <Maximize size={20} />
-                </button>
-              </div>
-            </div>
 
             {/* Back Button */}
             <button 
