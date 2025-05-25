@@ -8,6 +8,7 @@ export default function ARExperience() {
   const [arSupported, setArSupported] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cameraActive, setCameraActive] = useState(false);
+  const [webXRSupported, setWebXRSupported] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleBackToLanding = () => {
@@ -23,22 +24,26 @@ export default function ARExperience() {
       // Check for WebXR support first
       if ('xr' in navigator) {
         const isSupported = await (navigator as any).xr?.isSessionSupported('immersive-ar');
-        setArSupported(isSupported);
-      } else {
-        // Fallback to camera access check
-        if (navigator.mediaDevices?.getUserMedia) {
+        if (isSupported) {
+          setWebXRSupported(true);
           setArSupported(true);
         } else {
-          setArSupported(false);
+          // WebXR not supported, fallback to camera
+          setWebXRSupported(false);
+          setArSupported(navigator.mediaDevices?.getUserMedia ? true : false);
         }
+      } else {
+        // No WebXR, fallback to camera access check
+        setWebXRSupported(false);
+        setArSupported(navigator.mediaDevices?.getUserMedia ? true : false);
       }
     } catch (error) {
       console.log('AR check failed, falling back to camera access');
-      // Still try camera access as fallback
+      setWebXRSupported(false);
       setArSupported(navigator.mediaDevices?.getUserMedia ? true : false);
     }
     
-    setTimeout(() => setIsLoading(false), 2000); // Simulate loading time
+    setTimeout(() => setIsLoading(false), 2000);
   };
 
   const startARSession = async () => {
