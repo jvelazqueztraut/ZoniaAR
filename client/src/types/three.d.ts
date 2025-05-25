@@ -41,6 +41,14 @@ declare module 'three' {
     constructor(parameters?: any);
   }
   
+  export class MeshLambertMaterial {
+    constructor(parameters?: any);
+  }
+  
+  export class TextureLoader {
+    load(url: string, onLoad?: (texture: any) => void, onProgress?: (progress: any) => void, onError?: (error: any) => void): any;
+  }
+  
   export class Mesh {
     constructor(geometry: any, material: any);
     position: {
@@ -54,7 +62,10 @@ declare module 'three' {
       y: number;
       z: number;
     };
+    userData: any;
     rotateX(angle: number): void;
+    lookAt(x: number, y: number, z: number): void;
+    add(object: any): void;
   }
   
   export class HemisphereLight {
