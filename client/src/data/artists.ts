@@ -45,5 +45,41 @@ export const artists: Artist[] = [
     audio: "", // To be provided by user with real Zonia artist audio
     bio: "Jazz Fusion Collective blends traditional jazz with modern elements, creating sophisticated compositions that push the boundaries of the genre.",
     color: "#F59E0B"
+  },
+  {
+    id: "neon-vibes",
+    name: "Neon Vibes",
+    genre: "Synthwave",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+    audio: "", // To be provided by user with real Zonia artist audio
+    bio: "Neon Vibes delivers retro-futuristic synthwave that captures the nostalgic energy of 80s cyberpunk with modern production techniques.",
+    color: "#EC4899"
+  },
+  {
+    id: "urban-soul",
+    name: "Urban Soul",
+    genre: "R&B",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+    audio: "", // To be provided by user with real Zonia artist audio
+    bio: "Urban Soul brings smooth contemporary R&B with powerful vocals and intricate harmonies that speak to the heart and soul.",
+    color: "#8B5CF6"
+  },
+  {
+    id: "acoustic-journey",
+    name: "Acoustic Journey",
+    genre: "Folk",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+    audio: "", // To be provided by user with real Zonia artist audio
+    bio: "Acoustic Journey creates intimate folk narratives with fingerpicked guitars and storytelling that connects deeply with listeners.",
+    color: "#059669"
+  },
+  {
+    id: "digital-pulse",
+    name: "Digital Pulse",
+    genre: "Techno",
+    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400",
+    audio: "", // To be provided by user with real Zonia artist audio
+    bio: "Digital Pulse delivers high-energy techno with driving beats and hypnotic synths that electrify dance floors worldwide.",
+    color: "#DC2626"
   }
 ];

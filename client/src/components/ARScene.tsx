@@ -85,12 +85,14 @@ export default function ARScene({ isActive }: ARSceneProps) {
     }
 
     function render() {
-      // Animate artist cards with subtle floating motion
+      // Animate artist cards with subtle floating motion and always face user
       artistCardsRef.current.forEach((card, index) => {
         if (card) {
           const time = Date.now() * 0.001;
+          // Floating Y motion
           card.position.y = 0.5 + Math.sin(time + index * 0.5) * 0.1;
-          card.rotation.y += 0.005;
+          // Always face the center (user position)
+          card.lookAt(0, card.position.y, 0);
         }
       });
 
@@ -131,11 +133,12 @@ export default function ARScene({ isActive }: ARSceneProps) {
       textureLoader.load(
         artist.image,
         (texture) => {
-          // Create material with artist image
+          // Create material with artist image (double-sided to prevent disappearing)
           const cardMaterial = new THREE.MeshLambertMaterial({
             map: texture,
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
+            side: THREE.DoubleSide
           });
 
           const artistCard = new THREE.Mesh(cardGeometry, cardMaterial);
@@ -166,11 +169,12 @@ export default function ARScene({ isActive }: ARSceneProps) {
         undefined,
         (error) => {
           console.error('Error loading artist image:', error);
-          // Create fallback card with colored material
+          // Create fallback card with colored material (double-sided)
           const fallbackMaterial = new THREE.MeshLambertMaterial({
             color: artist.color,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            side: THREE.DoubleSide
           });
           
           const artistCard = new THREE.Mesh(cardGeometry, fallbackMaterial);
