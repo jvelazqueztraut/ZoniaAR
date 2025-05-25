@@ -1,0 +1,21 @@
+/* Zonia brand specific styles and utilities */
+
+.gradient-bg {
+  background: linear-gradient(135deg, #0F0F23 0%, #1A1A2E 50%, #16213E 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #1DB954 0%, #FF6B35 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ar-glow {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+}
+
+.music-wave {
+  background: linear-gradient(90deg, transparent 0%, #1DB954 50%, transparent 100%);
+  animation: wave 2s ease-in-out infinite;
+}
