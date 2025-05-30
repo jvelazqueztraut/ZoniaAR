@@ -8,6 +8,7 @@ declare module 'three' {
     constructor(fov: number, aspect: number, near: number, far: number);
     aspect: number;
     updateProjectionMatrix(): void;
+    add(object: any): void;
   }
   
   export class WebGLRenderer {

@@ -102,6 +102,37 @@ export default function ARScene({ isActive }: ARSceneProps) {
           card.position.y = 0.5 + Math.sin(time + index * 0.5) * 0.1;
           // Always face the center (user position)
           card.lookAt(0, card.position.y, 0);
+
+          // Check proximity and handle audio
+          if (userInteractedRef.current) {
+            const distance = card.position.distanceTo(cameraRef.current.position);
+            const audioSource = audioSourcesRef.current[index];
+            const userData = (card as any).userData;
+
+            if (distance <= proximityRadiusRef.current) {
+              // Within proximity radius
+              if (audioSource && !userData.isAudioActive) {
+                audioSource.play();
+                userData.isAudioActive = true;
+                // Enhance glow effect
+                if (userData.originalBorderMaterial) {
+                  userData.originalBorderMaterial.opacity = 0.6;
+                  userData.originalBorderMaterial.color.setHex(0xffffff);
+                }
+              }
+            } else {
+              // Outside proximity radius
+              if (audioSource && userData.isAudioActive) {
+                audioSource.pause();
+                userData.isAudioActive = false;
+                // Reset glow effect
+                if (userData.originalBorderMaterial) {
+                  userData.originalBorderMaterial.opacity = 0.3;
+                  userData.originalBorderMaterial.color.setHex(parseInt(userData.artist.color.replace('#', '0x')));
+                }
+              }
+            }
+          }
         }
       });
 
@@ -169,8 +200,34 @@ export default function ARScene({ isActive }: ARSceneProps) {
           border.position.z = -0.001; // Slightly behind the card
           artistCard.add(border);
 
-          // Store reference to artist data
-          (artistCard as any).userData = artist;
+          // Store reference to artist data and audio state
+          (artistCard as any).userData = {
+            artist,
+            isAudioActive: false,
+            originalBorderMaterial: borderMaterial
+          };
+          
+          // Create positional audio for this artist (if audio URL exists)
+          let positionalAudio: THREE.PositionalAudio | null = null;
+          if (artist.audio && artist.audio.trim() !== '') {
+            positionalAudio = new THREE.PositionalAudio(audioListenerRef.current);
+            
+            // Load audio file
+            const audioLoader = new THREE.AudioLoader();
+            audioLoader.load(artist.audio, (buffer) => {
+              positionalAudio?.setBuffer(buffer);
+              positionalAudio?.setRefDistance(1);
+              positionalAudio?.setVolume(0.5);
+            }, undefined, (error) => {
+              console.warn(`Failed to load audio for ${artist.name}:`, error);
+            });
+            
+            // Attach audio to the artist card
+            artistCard.add(positionalAudio);
+          }
+          
+          // Store audio reference
+          audioSourcesRef.current[index] = positionalAudio;
           
           scene.add(artistCard);
           artistCardsRef.current.push(artistCard);
@@ -250,6 +307,24 @@ export default function ARScene({ isActive }: ARSceneProps) {
       mountRef.current.removeChild(rendererRef.current.domElement);
     }
   };
+
+  // Add user interaction handler
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      userInteractedRef.current = true;
+      // Remove event listeners after first interaction
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, []);
 
   if (!isActive) return null;
 
