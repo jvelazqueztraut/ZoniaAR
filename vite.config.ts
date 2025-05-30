@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import fs from 'fs';
 
 export default defineConfig({
   plugins: [
@@ -16,6 +17,13 @@ export default defineConfig({
         ]
       : []),
   ],
+  server: {
+    host: '0.0.0.0', // This allows access from other devices on the network
+    https: {
+      key: fs.readFileSync('./certs/key.pem'),
+      cert: fs.readFileSync('./certs/cert.pem'),
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
