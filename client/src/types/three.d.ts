@@ -21,7 +21,7 @@ declare module 'three' {
       setSession(session: any): void;
     };
     domElement: HTMLCanvasElement;
-    setAnimationLoop(callback: () => void): void;
+    setAnimationLoop(callback: (timestamp: number, frame?: any) => void): void;
     render(scene: Scene, camera: PerspectiveCamera): void;
     dispose(): void;
   }
@@ -97,4 +97,22 @@ declare module 'three' {
   
   export const SRGBColorSpace: any;
   export const DoubleSide: any;
+  
+  export class Audio {
+    constructor(listener: AudioListener);
+    setBuffer(buffer: any): void;
+    setVolume(volume: number): void;
+    play(): void;
+    pause(): void;
+    stop(): void;
+    isPlaying: boolean;
+  }
+  
+  export class Vector3 {
+    constructor(x: number, y: number, z: number);
+    x: number;
+    y: number;
+    z: number;
+    distanceTo(v: Vector3): number;
+  }
 }

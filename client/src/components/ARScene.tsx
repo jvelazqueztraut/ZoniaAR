@@ -16,8 +16,10 @@ export default function ARScene({ isActive }: ARSceneProps) {
   const artistCardsRef = useRef<any[]>([]);
   const hitTestSourceRef = useRef<any>(null);
   const hitTestResultsRef = useRef<any[]>([]);
+  const referenceSpaceRef = useRef<any>(null);
   const audioListenerRef = useRef<any>(null);
   const audioSourcesRef = useRef<any[]>([]);
+  const testAudioRef = useRef<any>(null);
   const userInteractedRef = useRef(false);
   const proximityRadiusRef = useRef(1.2); // 1.2 meters proximity threshold
 
@@ -51,6 +53,20 @@ export default function ARScene({ isActive }: ARSceneProps) {
     const audioListener = new THREE.AudioListener();
     audioListenerRef.current = audioListener;
     camera.add(audioListener);
+
+    // Create test audio (non-positional)
+    const testAudio = new THREE.Audio(audioListener);
+    testAudioRef.current = testAudio;
+    
+    // Load test audio
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('/placeholder.mp3', (buffer) => {
+      testAudio.setBuffer(buffer);
+      testAudio.setVolume(0.5);
+      console.log('Test audio loaded successfully');
+    }, undefined, (error) => {
+      console.error('Failed to load test audio:', error);
+    });
 
     // Create renderer
     const renderer = new THREE.WebGLRenderer({ 
@@ -93,7 +109,57 @@ export default function ARScene({ isActive }: ARSceneProps) {
       renderer.setAnimationLoop(render);
     }
 
-    function render() {
+    function render(timestamp: number, frame?: any) {
+      if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+
+      // Handle hit testing for interaction
+      if (hitTestSourceRef.current && sessionRef.current && referenceSpaceRef.current && frame) {
+        hitTestResultsRef.current = frame.getHitTestResults(hitTestSourceRef.current);
+
+        // Check for hits on artist cards
+        hitTestResultsRef.current.forEach((hit: any) => {
+          const hitPoint = hit.getPose(referenceSpaceRef.current).transform.position;
+          const hitPointVector = new THREE.Vector3(
+            hitPoint.x,
+            hitPoint.y,
+            hitPoint.z
+          );
+
+          // Check distance to each artist card
+          artistCardsRef.current.forEach((card, index) => {
+            if (card) {
+              const distance = card.position.distanceTo(hitPointVector);
+              if (distance < 0.5) { // If hit is close to a card
+                console.log('Hit artist card:', index);
+                const userData = (card as any).userData;
+                
+                // Toggle audio
+                const audioSource = audioSourcesRef.current[index];
+                if (audioSource) {
+                  if (audioSource.isPlaying) {
+                    audioSource.pause();
+                    userData.isAudioActive = false;
+                    // Reset glow effect
+                    if (userData.originalBorderMaterial) {
+                      userData.originalBorderMaterial.opacity = 0.3;
+                      userData.originalBorderMaterial.color.setHex(parseInt(userData.artist.color.replace('#', '0x')));
+                    }
+                  } else {
+                    audioSource.play();
+                    userData.isAudioActive = true;
+                    // Enhance glow effect
+                    if (userData.originalBorderMaterial) {
+                      userData.originalBorderMaterial.opacity = 0.6;
+                      userData.originalBorderMaterial.color.setHex(0xffffff);
+                    }
+                  }
+                }
+              }
+            }
+          });
+        });
+      }
+
       // Animate artist cards with subtle floating motion and always face user
       artistCardsRef.current.forEach((card, index) => {
         if (card) {
@@ -102,41 +168,10 @@ export default function ARScene({ isActive }: ARSceneProps) {
           card.position.y = 0.5 + Math.sin(time + index * 0.5) * 0.1;
           // Always face the center (user position)
           card.lookAt(0, card.position.y, 0);
-
-          // Check proximity and handle audio
-          if (userInteractedRef.current) {
-            const distance = card.position.distanceTo(cameraRef.current.position);
-            const audioSource = audioSourcesRef.current[index];
-            const userData = (card as any).userData;
-
-            if (distance <= proximityRadiusRef.current) {
-              // Within proximity radius
-              if (audioSource && !userData.isAudioActive) {
-                audioSource.play();
-                userData.isAudioActive = true;
-                // Enhance glow effect
-                if (userData.originalBorderMaterial) {
-                  userData.originalBorderMaterial.opacity = 0.6;
-                  userData.originalBorderMaterial.color.setHex(0xffffff);
-                }
-              }
-            } else {
-              // Outside proximity radius
-              if (audioSource && userData.isAudioActive) {
-                audioSource.pause();
-                userData.isAudioActive = false;
-                // Reset glow effect
-                if (userData.originalBorderMaterial) {
-                  userData.originalBorderMaterial.opacity = 0.3;
-                  userData.originalBorderMaterial.color.setHex(parseInt(userData.artist.color.replace('#', '0x')));
-                }
-              }
-            }
-          }
         }
       });
 
-      renderer.render(scene, camera);
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
 
     // Handle window resize
@@ -285,12 +320,34 @@ export default function ARScene({ isActive }: ARSceneProps) {
       
       sessionRef.current = session;
       rendererRef.current.xr.setSession(session);
+
+      // Initialize audio context within XR session
+      if (audioListenerRef.current) {
+        const audioContext = audioListenerRef.current.context;
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('Audio context resumed in XR session');
+        }
+      }
       
-      // Set up hit testing for surface anchoring
+      // Set up hit testing for surface anchoring and interaction
       const referenceSpace = await session.requestReferenceSpace('viewer');
+      referenceSpaceRef.current = referenceSpace;
       hitTestSourceRef.current = await session.requestHitTestSource({ space: referenceSpace });
       
       console.log('AR session started successfully with hit testing');
+
+      // Add session end handler
+      session.addEventListener('end', () => {
+        console.log('XR session ended');
+        // Clean up audio
+        if (testAudioRef.current) {
+          testAudioRef.current.stop();
+        }
+        audioSourcesRef.current.forEach(source => {
+          if (source) source.stop();
+        });
+      });
     } catch (error) {
       console.log('Failed to start AR session:', error);
     }
@@ -308,10 +365,26 @@ export default function ARScene({ isActive }: ARSceneProps) {
     }
   };
 
-  // Add user interaction handler
+  // Keep the regular DOM event listeners for non-XR mode
   useEffect(() => {
-    const handleUserInteraction = () => {
+    const handleUserInteraction = async () => {
       userInteractedRef.current = true;
+      
+      // Ensure audio context is running
+      if (audioListenerRef.current) {
+        const audioContext = audioListenerRef.current.context;
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('Audio context resumed on user interaction');
+        }
+      }
+
+      // Play test audio on first interaction
+      if (testAudioRef.current && !testAudioRef.current.isPlaying) {
+        testAudioRef.current.play();
+        console.log('Test audio started playing');
+      }
+
       // Remove event listeners after first interaction
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('touchstart', handleUserInteraction);
